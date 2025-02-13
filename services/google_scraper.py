@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 def search_tistory_google(query: str, max_results: int = 10):
     """ Google 검색을 통해 Tistory 블로그 상위 포스팅 URL 가져오기 """
 
-    # 🔹 Chrome 드라이버 설정
+    # Chrome 드라이버 설정
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")  # 화면 없이 실행 (리소스 절약)
     options.add_argument("--no-sandbox")
@@ -24,27 +24,27 @@ def search_tistory_google(query: str, max_results: int = 10):
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
 
-    # 🔹 Google 검색 URL
+    # Google 검색 URL
     search_url = f"https://www.google.com/search?q={query}+site:tistory.com"
     driver.get(search_url)
 
-    # 🔹 추가 대기 시간 (Google 차단 방지)
+    # 추가 대기 시간 (Google 차단 방지)
     time.sleep(3)  # 🔥 Google 차단을 방지하기 위해 3초 대기
 
-    # 🔹 검색 결과가 완전히 로딩될 때까지 대기
+    # 검색 결과가 완전히 로딩될 때까지 대기
     try:
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.yuRUbf a")))
     except:
         driver.quit()
         return {"error": "검색 결과를 가져올 수 없음 (요소 미발견)"}
 
-    # 🔹 BeautifulSoup으로 HTML 파싱
+    # BeautifulSoup으로 HTML 파싱
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()  # 드라이버 종료
 
     results = []
 
-    # 🔹 Google 검색 결과에서 블로그 제목 & 링크 가져오기
+    # Google 검색 결과에서 블로그 제목 & 링크 가져오기
     for g in soup.select("div.yuRUbf")[:max_results]:  # 🔥 최신 Google 검색 결과 태그
         title_tag = g.select_one("h3")
         link_tag = g.select_one("a")

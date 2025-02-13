@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>블로그 분석 대시보드</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 40px; }
+        h2 { color: #333; }
+        .container { max-width: 900px; margin: auto; }
+        .box { border: 1px solid #ccc; padding: 15px; margin: 15px; text-align: left; }
+        .positive { color: green; }
+        .negative { color: red; }
+        .neutral { color: gray; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 블로그 분석 대시보드</h1>
+        <h2>"{{ query }}" 관련 분석 결과</h2>
+
+        <div class="box">
+            <h3>📈 키워드 분석 결과</h3>
+            <img src="data:image/png;base64,{{ chart_data }}" alt="키워드 분석 차트">
+        </div>
+
+        {% for result in results %}
+        <div class="box">
+            <h3><a href="{{ result.url }}" target="_blank">{{ result.title }}</a></h3>
+            <p><strong>🔑 URL:</strong> {{ result.url }}</p>
+            <p><strong>🔑 키워드:</strong> {{ result.keywords }}</p>
+            <p>
+                <strong>📌 감성 분석:</strong>
+                {% if result.sentiment == "긍정 😀" %}
+                    <span class="positive">긍정 😀</span>
+                {% elif result.sentiment == "부정 😡" %}
+                    <span class="negative">부정 😡</span>
+                {% else %}
+                    <span class="neutral">중립 😐</span>
+                {% endif %}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
