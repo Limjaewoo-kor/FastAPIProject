@@ -19,3 +19,5 @@ pip install konlpy
 pip install requests beautifulsoup4
 ->
 pip install selenium beautifulsoup4 webdriver-manager
+
+pip install undetected-chromedriver

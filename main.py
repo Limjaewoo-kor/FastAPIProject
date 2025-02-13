@@ -240,3 +240,30 @@ def search_analyze_tistory(query: str, max_results: int = 5, top_n: int = 5):
         })
 
     return {"status": "success", "data": analyzed_results}
+
+
+from services.naver_scraper import search_naver_blogs_selenium, fetch_naver_blog_content_selenium
+from services.text_analyzer import extract_keywords, analyze_sentiment_kcbert
+
+@app.get("/search-analyze-naver/")
+def search_analyze_naver(query: str, max_results: int = 5, top_n: int = 5):
+    """ 네이버 블로그 검색 → 본문 크롤링 → 분석 자동화 """
+    search_results = search_naver_blogs_selenium(query, max_results)
+
+    analyzed_results = []
+    for result in search_results:
+        analysis = fetch_naver_blog_content_selenium(result["link"])
+        if "error" in analysis:
+            continue  # 본문 크롤링 실패한 경우 제외
+
+        keywords = extract_keywords(analysis["content"], top_n)
+        sentiment = analyze_sentiment_kcbert(analysis["content"])
+
+        analyzed_results.append({
+            "title": result["title"],
+            "url": result["link"],
+            "keywords": keywords,
+            "sentiment": sentiment
+        })
+
+    return {"status": "success", "data": analyzed_results}
