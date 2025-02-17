@@ -1,18 +1,47 @@
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
 from services.html_scraper import fetch_blog_content
 from services.rss_scraper import fetch_rss_feed
 from services.text_analyzer import extract_keywords, analyze_sentiment, analyze_sentiment_kcbert
 from services.google_scraper import search_tistory_google
-import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import io
 import base64
+from fastapi import FastAPI, Request
+from fastapi.templating import Jinja2Templates
+import matplotlib.pyplot as plt
+from models import SessionLocal, init_db
+from services.naver_scraper import search_naver_blogs_api, fetch_naver_blog_content
+from services.tistory_scraper import search_tistory_blogs_api, fetch_tistory_blog_content
+from services.text_analyzer import extract_keywords, analyze_sentiment_kcbert
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from models import BlogPost
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 app = FastAPI()
-
 #  Jinja2 템플릿 설정
 templates = Jinja2Templates(directory="templates")
+# 🔹 앱 시작 시 DB 초기화
+init_db()
+
+# 🔹 DB 세션 생성
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    # allow_origins=["http://localhost:3000"],  # React 개발 서버 주소
+    allow_origins=["*"],  # React 개발 서버 주소
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 #  시스템 내 한글 폰트 목록 가져오기
 font_list = [f.name for f in fm.fontManager.ttflist]
@@ -32,18 +61,31 @@ def home(request: Request):
 
 
 @app.get("/dashboard2/")
-def show_dashboard(request: Request, query: str, max_results: int = 5, top_n: int = 5):
-    """ 검색 → 본문 크롤링 → 분석 결과를 대시보드로 시각화 """
+def show_dashboard2(request: Request, query: str, max_results: int = 5, top_n: int = 5, db: Session = Depends(get_db)):
+    """ 티스토리 블로그 검색 → 본문 크롤링 → 분석 결과를 대시보드로 시각화 """
+    # search_results = search_tistory_blogs_api(query, max_results)
     search_results = search_tistory_google(query, max_results)
 
     analyzed_results = []
     for result in search_results:
-        analysis = fetch_tistory_content(result["link"])
+        analysis = fetch_tistory_blog_content(result["link"])
         if "error" in analysis:
-            continue  # 오류 발생 시 해당 글 제외
+            continue  # 본문 크롤링 실패한 경우 제외
 
         keywords = extract_keywords(analysis["content"], top_n)
         sentiment = analyze_sentiment_kcbert(analysis["content"])
+
+        # 🔹 결과를 DB에 저장
+        db_post = BlogPost(
+            source="티스토리",
+            query=query,
+            title=result["title"],
+            url=result["link"],
+            keywords=",".join(keywords),
+            sentiment=sentiment
+        )
+        db.add(db_post)
+        db.commit()
 
         analyzed_results.append({
             "title": result["title"],
@@ -65,7 +107,7 @@ def show_dashboard(request: Request, query: str, max_results: int = 5, top_n: in
     ax.barh(words, scores, color='skyblue')
     plt.xlabel("등장 횟수")
     plt.ylabel("키워드")
-    plt.title("키워드 빈도수 분석")
+    plt.title("티스토리 키워드 분석")
 
     # 차트를 Base64로 변환하여 HTML에서 사용 가능하게 변환
     buf = io.BytesIO()
@@ -82,44 +124,65 @@ def show_dashboard(request: Request, query: str, max_results: int = 5, top_n: in
     })
 
 
-@app.get("/dashboard/")
-def dashboard(request: Request, url: str):
-    """ 블로그 분석 대시보드 """
-    # http://127.0.0.1:8000/dashboard/?url=https://lcoding.tistory.com/199
-    data = fetch_blog_content(url)
-    if "error" in data:
-        return {"error": "크롤링 실패"}
+@app.get("/dashboard1/")
+def show_dashboard1(request: Request, query: str, max_results: int = 5, top_n: int = 5, db: Session = Depends(get_db)):
+    """ 네이버 블로그 검색 → 본문 크롤링 → 분석 결과를 대시보드로 시각화 """
+    search_results = search_naver_blogs_api(query, max_results)
 
-    #  키워드 분석
-    keywords = extract_keywords(data["content"], top_n=5)
+    analyzed_results = []
+    for result in search_results:
+        analysis = fetch_naver_blog_content(result["link"])
+        if "error" in analysis:
+            continue  # 오류 발생 시 해당 글 제외
 
-    #  감성 분석
-    # sentiment = analyze_sentiment(data["content"])
-    sentiment = analyze_sentiment_kcbert(data["content"])
+        keywords = extract_keywords(analysis["content"], top_n)
+        sentiment = analyze_sentiment_kcbert(analysis["content"])
 
-    #  키워드 차트 생성
+        # 🔹 결과를 DB에 저장
+        db_post = BlogPost(
+            source="네이버",
+            query=query,
+            title=result["title"],
+            url=result["link"],
+            keywords=",".join(keywords),
+            sentiment=sentiment
+        )
+        db.add(db_post)
+        db.commit()
+
+        analyzed_results.append({
+            "title": result["title"],
+            "url": result["link"],
+            "keywords": keywords,
+            "sentiment": sentiment
+        })
+
+    # 키워드 분석 차트 생성
+    keyword_freq = {}
+    for result in analyzed_results:
+        for kw in result["keywords"]:
+            keyword_freq[kw] = keyword_freq.get(kw, 0) + 1
+
+    # Matplotlib 차트 생성
     fig, ax = plt.subplots()
-    words = [kw for kw in keywords]
-    scores = [i+1 for i in range(len(keywords))]
+    words = list(keyword_freq.keys())
+    scores = list(keyword_freq.values())
     ax.barh(words, scores, color='skyblue')
-    plt.xlabel("중요도")
+    plt.xlabel("등장 횟수")
     plt.ylabel("키워드")
-    plt.title("키워드 분석")
+    plt.title("네이버 키워드 분석")
 
-    #  차트를 Base64로 변환하여 HTML에서 사용 가능하게 변환
+    # 차트를 Base64로 변환하여 HTML에서 사용 가능하게 변환
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     buf.seek(0)
     chart_data = base64.b64encode(buf.getvalue()).decode("utf-8")
     plt.close()
 
-    return templates.TemplateResponse("dashboard.html", {
+    return templates.TemplateResponse("dashboard1.html", {
         "request": request,
-        "url": url,
-        "title": data["title"],
-        "content": data["content"][:500],  # 본문 미리보기 (500자)
-        "keywords": keywords,
-        "sentiment": sentiment,
+        "query": query,
+        "results": analyzed_results,
         "chart_data": chart_data
     })
 
@@ -221,43 +284,38 @@ def analyze_tistory(url: str, top_n: int = 5):
     }
 
 
-
-from services.google_scraper import search_tistory_google
-
-@app.get("/search-analyze-tistory/")
-def search_analyze_tistory(query: str, max_results: int = 5, top_n: int = 5):
-    """ Google 검색 → 블로그 본문 크롤링 → 키워드 & 감성 분석 자동 수행 """
-    search_results = search_tistory_google(query, max_results)
-
-    analyzed_results = []
-    for result in search_results:
-        analysis = analyze_tistory(result["link"], top_n)
-        analyzed_results.append({
-            "title": result["title"],
-            "url": result["link"],
-            "keywords": analysis["keywords"],
-            "sentiment": analysis["sentiment"]
-        })
-
-    return {"status": "success", "data": analyzed_results}
-
-
-from services.naver_scraper import search_naver_blogs_selenium, fetch_naver_blog_content_selenium
+from services.naver_scraper import search_naver_blogs_api,fetch_naver_blog_content
+from services.tistory_scraper import search_tistory_blogs_api, fetch_tistory_blog_content, search_tistory_blogs_selenium
 from services.text_analyzer import extract_keywords, analyze_sentiment_kcbert
 
+
 @app.get("/search-analyze-naver/")
-def search_analyze_naver(query: str, max_results: int = 5, top_n: int = 5):
+def search_analyze_naver(query: str, max_results: int = 5, top_n: int = 5, db: Session = Depends(get_db)):
+    #http://127.0.0.1:8000/search-analyze-naver/?query=backend&max_results=5&top_n=5
+
     """ 네이버 블로그 검색 → 본문 크롤링 → 분석 자동화 """
-    search_results = search_naver_blogs_selenium(query, max_results)
+    search_results = search_naver_blogs_api(query, max_results)
 
     analyzed_results = []
     for result in search_results:
-        analysis = fetch_naver_blog_content_selenium(result["link"])
+        analysis = fetch_naver_blog_content(result["link"])
         if "error" in analysis:
             continue  # 본문 크롤링 실패한 경우 제외
 
         keywords = extract_keywords(analysis["content"], top_n)
         sentiment = analyze_sentiment_kcbert(analysis["content"])
+
+        # 🔹 결과를 DB에 저장
+        db_post = BlogPost(
+            source="네이버",
+            query=query,
+            title=result["title"],
+            url=result["link"],
+            keywords=",".join(keywords),
+            sentiment=sentiment
+        )
+        db.add(db_post)
+        db.commit()
 
         analyzed_results.append({
             "title": result["title"],
@@ -267,3 +325,44 @@ def search_analyze_naver(query: str, max_results: int = 5, top_n: int = 5):
         })
 
     return {"status": "success", "data": analyzed_results}
+
+
+@app.get("/search-analyze-tistory/")
+def search_analyze_tistory(query: str, max_results: int = 5, top_n: int = 5, db: Session = Depends(get_db)):
+
+    # http://127.0.0.1:8000/search-analyze-tistory/?query=backend&max_results=5&top_n=5
+
+    """ 티스토리 블로그 검색 → 본문 크롤링 → 분석 자동화 """
+    # search_results = search_tistory_blogs_api(query, max_results)
+    search_results = search_tistory_google(query, max_results)
+
+    analyzed_results = []
+    for result in search_results:
+        analysis = fetch_tistory_blog_content(result["link"])
+        if "error" in analysis:
+            continue  # 본문 크롤링 실패한 경우 제외
+
+        keywords = extract_keywords(analysis["content"], top_n)
+        sentiment = analyze_sentiment_kcbert(analysis["content"])
+
+        # 🔹 결과를 DB에 저장
+        db_post = BlogPost(
+            source="티스토리",
+            query=query,
+            title=result["title"],
+            url=result["link"],
+            keywords=",".join(keywords),
+            sentiment=sentiment
+        )
+        db.add(db_post)
+        db.commit()
+
+        analyzed_results.append({
+            "title": result["title"],
+            "url": result["link"],
+            "keywords": keywords,
+            "sentiment": sentiment
+        })
+
+    return {"status": "success", "data": analyzed_results}
+

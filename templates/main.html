@@ -14,47 +14,36 @@
 <body>
     <div class="container">
         <h1>📊 블로그 분석 검색</h1>
-        <p>티스토리 검색어를 입력하세요:</p>
-        <input type="text" id="queryInput" placeholder="예: 백엔드 개발">
+
+        <p>네이버 블로그 검색:</p>
+        <input type="text" id="queryNaver" placeholder="예: 백엔드 개발">
         <br>
-        <button onclick="searchTstoryKeyword()">검색어 지정</button>
+        <button onclick="searchNaverKeyword()">검색</button>
+
+        <br><br>
+
+        <p>티스토리 블로그 검색:</p>
+        <input type="text" id="queryTistory" placeholder="예: 백엔드 개발">
         <br>
-        <p>URL을 입력하세요:</p>
-        <input type="text" id="queryInput2" placeholder="예: https://lcoding.tistory.com/199">
-        <br>
-        <button onclick="searchTstoryUrl()">URL 지정</button>
-        <br>
-        <p>네이버 검색어를 입력하세요:</p>
-        <input type="text" id="queryInput3" placeholder="예: 백엔드 개발">
-        <br>
-        <button onclick="searchNaverKeyword()">검색어 지정</button>
+        <button onclick="searchTistoryKeyword()">검색</button>
     </div>
 
-
     <script>
-        function searchTstoryKeyword() {
-            let query = document.getElementById("queryInput").value;
+        function searchNaverKeyword() {
+            let query = document.getElementById("queryNaver").value;
             if (query.trim() !== "") {
-                window.location.href = `/dashboard2/?query=${encodeURIComponent(query)}&max_results=5&top_n=5`;
+                window.location.href = `/dashboard1/?query=${encodeURIComponent(query)}&max_results=5&top_n=5`;
             } else {
                 alert("검색어를 입력해주세요!");
             }
         }
-         function searchTstoryUrl() {
-            let query = document.getElementById("queryInput2").value;
+
+        function searchTistoryKeyword() {
+            let query = document.getElementById("queryTistory").value;
             if (query.trim() !== "") {
-                window.location.href = `/dashboard/?url=${encodeURIComponent(query)}`;
+                window.location.href = `/dashboard2/?query=${encodeURIComponent(query)}&max_results=5&top_n=5`;
             } else {
-                alert("url을 입력해주세요!");
-            }
-        }
-        function searchNaverKeyword() {
-            let query = document.getElementById("queryInput3").value;
-            if (query.trim() !== "") {
-                // https://search.naver.com/search.naver?where=post&query=백엔드 개발
-                window.location.href = `/dashboard/?url=${encodeURIComponent(query)}`;
-            } else {
-                alert("url을 입력해주세요!");
+                alert("검색어를 입력해주세요!");
             }
         }
     </script>

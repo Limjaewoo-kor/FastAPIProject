@@ -1,0 +1,14 @@
+# 🔹 .env 파일 (API 키 보호)
+config/.env
+
+# 🔹 Python 관련 불필요한 파일
+__pycache__/
+*.pyc
+*.pyo
+
+# 🔹 IDE 설정 파일
+.vscode/
+.idea/
+
+# 🔹 가상환경 (venv)
+venv/

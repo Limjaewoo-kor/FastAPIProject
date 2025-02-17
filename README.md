@@ -21,3 +21,7 @@ pip install requests beautifulsoup4
 pip install selenium beautifulsoup4 webdriver-manager
 
 pip install undetected-chromedriver
+
+pip install python-dotenv
+
+pip install sqlalchemy sqlite3
