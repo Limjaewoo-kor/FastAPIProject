@@ -61,17 +61,17 @@ def analyze_sentiment(text: str):
 
 
 
-# KcBERT 모델 로드 & 감성 분석 코드
+# beomi/KcELECTRA-base 모델 로드 & 감성 분석 코드
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
 
-# 감성 분석 전용 KcBERT 모델 사용 (일반 KcBERT 사용하면 오류 발생)
+# 감성 분석 전용 beomi/KcELECTRA-base 모델 사용 (일반 beomi/KcELECTRA-base 사용하면 오류 발생)
 MODEL_NAME = "beomi/KcELECTRA-base"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
 
 def analyze_sentiment_kcbert(text: str):
-    """ KcBERT를 이용한 한글 감성 분석 (올바른 감성 분석 모델 사용) """
+    """ beomi/KcELECTRA-base 이용한 한글 감성 분석 (올바른 감성 분석 모델 사용) """
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
 
     with torch.no_grad():  # 모델 추론 모드
