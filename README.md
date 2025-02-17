@@ -1,10 +1,10 @@
-티스토리, 네이버 검색어 분석 시스템[keywords,sentiment] 초기 버전 생성 완료.
-수집 -> 네이버 검색 API / selenium
-키워드 분석(keywords) -> TF_IDF
-감성 분석(sentiment) -> beomi/KcELECTRA-base모델
-sqlalchemy db 설치 완료.
-react 연동 완료.
-
+티스토리, 네이버 검색어 분석 시스템[keywords,sentiment] 초기 버전 생성 완료.<br>
+수집 -> 네이버 검색 API / selenium<br>
+키워드 분석(keywords) -> TF_IDF<br>
+감성 분석(sentiment) -> beomi/KcELECTRA-base모델<br>
+sqlalchemy db 설치 완료.<br>
+react 연동 완료.<br>
+<br>
 
 pip install feedparser fastapi uvicorn
 
