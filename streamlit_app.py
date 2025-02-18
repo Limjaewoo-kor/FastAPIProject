@@ -1,6 +1,6 @@
 import streamlit as st
-from services.html_scraper import fetch_blog_content
-from services.text_analyzer import extract_keywords, analyze_sentiment
+from app.services.html_scraper import fetch_blog_content
+from app.services.text_analyzer import extract_keywords, analyze_sentiment
 
 st.title("📊 블로그 분석 대시보드")
 

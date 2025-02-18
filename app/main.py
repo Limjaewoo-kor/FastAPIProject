@@ -1,20 +1,20 @@
-from services.html_scraper import fetch_blog_content
-from services.rss_scraper import fetch_rss_feed
-from services.text_analyzer import extract_keywords, analyze_sentiment, analyze_sentiment_kcbert
-from services.google_scraper import search_tistory_google
+from app.services.html_scraper import fetch_blog_content
+from app.services.rss_scraper import fetch_rss_feed
+from app.services.text_analyzer import extract_keywords, analyze_sentiment, analyze_sentiment_kcbert
+from app.services.google_scraper import search_tistory_google
 import matplotlib.font_manager as fm
 import io
 import base64
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 import matplotlib.pyplot as plt
-from models import SessionLocal, init_db
-from services.naver_scraper import search_naver_blogs_api, fetch_naver_blog_content
-from services.tistory_scraper import search_tistory_blogs_api, fetch_tistory_blog_content
-from services.text_analyzer import extract_keywords, analyze_sentiment_kcbert
+from app.models import SessionLocal, init_db
+from app.services.naver_scraper import search_naver_blogs_api, fetch_naver_blog_content
+from app.services.tistory_scraper import search_tistory_blogs_api, fetch_tistory_blog_content
+from app.services.text_analyzer import extract_keywords, analyze_sentiment_kcbert
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from models import BlogPost
+from app.models import BlogPost
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -53,6 +53,31 @@ plt.rc('font', family='Malgun Gothic')  # Windows: 맑은 고딕
 # plt.rc('font', family='NanumGothic')  # Linux: 나눔고딕
 
 plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
+
+
+# import sqlite3
+# import pandas as pd
+#
+# # 🔹 SQLite 데이터 로드
+# conn = sqlite3.connect("../../trendflow.db")
+# query = "SELECT title, keywords, sentiment FROM blog_posts"
+# df = pd.read_sql(query, conn)
+#
+# # 🔹 `title`과 `keywords`를 합쳐서 학습 데이터로 사용
+# df["text"] = df["title"] + " " + df["keywords"]
+#
+# # 🔹 감성 분석 라벨링 (긍정=1, 부정=0)
+# df["label"] = df["sentiment"].apply(lambda x: 1 if "긍정" in x else 0)
+#
+# # 🔹 필요한 컬럼만 선택
+# df = df[["text", "label"]]
+#
+# # 🔹 CSV로 저장
+# df.to_csv("sentiment_data.csv", index=False)
+#
+# # 🔹 데이터 확인
+# print(df.head())
+
 
 @app.get("/")
 def home(request: Request):
@@ -255,7 +280,7 @@ def search_tistory_google_api(query: str):
     return {"status": "success", "data": results}
 
 
-from services.tistory_scraper import fetch_tistory_content
+from app.services.tistory_scraper import fetch_tistory_content
 
 @app.get("/fetch-tistory-content/")
 def fetch_tistory(url: str):
@@ -264,7 +289,7 @@ def fetch_tistory(url: str):
     return {"status": "success", "data": data}
 
 
-from services.text_analyzer import extract_keywords, analyze_sentiment_kcbert
+from app.services.text_analyzer import extract_keywords, analyze_sentiment_kcbert
 
 @app.get("/analyze-tistory/")
 def analyze_tistory(url: str, top_n: int = 5):
@@ -284,9 +309,9 @@ def analyze_tistory(url: str, top_n: int = 5):
     }
 
 
-from services.naver_scraper import search_naver_blogs_api,fetch_naver_blog_content
-from services.tistory_scraper import search_tistory_blogs_api, fetch_tistory_blog_content, search_tistory_blogs_selenium
-from services.text_analyzer import extract_keywords, analyze_sentiment_kcbert
+from app.services.naver_scraper import search_naver_blogs_api,fetch_naver_blog_content
+from app.services.tistory_scraper import search_tistory_blogs_api, fetch_tistory_blog_content, search_tistory_blogs_selenium
+from app.services.text_analyzer import extract_keywords, analyze_sentiment_kcbert
 
 
 @app.get("/search-analyze-naver/")
